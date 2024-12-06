@@ -18,30 +18,34 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        // Set canvas size to window size
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height * 0.8,
+            width: canvas.width * 0.1,
+            height: canvas.width * 0.1,
+            speed: 5
+        };
+
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            player.y = canvas.height * 0.8;
+            player.width = canvas.width * 0.1;
+            player.height = player.width;
+            player.x = Math.min(player.x, canvas.width - player.width);
         }
-        resizeCanvas();
+        
         window.addEventListener('resize', resizeCanvas);
-
-        // Game objects
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height - 50,
-            width: 30,
-            height: 30,
-            speed: 5
-        };
 
         const bullets = [];
         const enemies = [];
         let score = 0;
         let lastShot = 0;
 
-        // Touch handling
         let touchX = null;
         
         canvas.addEventListener('touchstart', e => {
@@ -64,33 +68,30 @@
             touchX = null;
         });
 
-        // Auto shooting
         function autoShoot() {
             const now = Date.now();
-            if (now - lastShot > 500) {  // Shoot every 500ms
+            if (now - lastShot > 500) {
                 bullets.push({
                     x: player.x + player.width / 2,
                     y: player.y,
-                    width: 4,
-                    height: 10,
-                    speed: 7
+                    width: canvas.width * 0.01,
+                    height: canvas.height * 0.02,
+                    speed: canvas.height * 0.01
                 });
                 lastShot = now;
             }
         }
 
-        // Spawn enemies
         function spawnEnemy() {
             enemies.push({
-                x: Math.random() * (canvas.width - 30),
+                x: Math.random() * (canvas.width - player.width),
                 y: 0,
-                width: 30,
-                height: 30,
-                speed: 2
+                width: player.width,
+                height: player.width,
+                speed: canvas.height * 0.003
             });
         }
 
-        // Check collisions
         function checkCollision(rect1, rect2) {
             return rect1.x < rect2.x + rect2.width &&
                    rect1.x + rect1.width > rect2.x &&
@@ -98,19 +99,14 @@
                    rect1.y + rect1.height > rect2.y;
         }
 
-        // Game loop
         function gameLoop() {
-            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Auto shoot
             autoShoot();
 
-            // Draw player
             ctx.fillStyle = 'white';
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // Update and draw bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].y -= bullets[i].speed;
                 ctx.fillStyle = 'red';
@@ -119,16 +115,13 @@
                 if (bullets[i].y < 0) bullets.splice(i, 1);
             }
 
-            // Spawn enemies
             if (Math.random() < 0.02) spawnEnemy();
 
-            // Update and draw enemies
             for (let i = enemies.length - 1; i >= 0; i--) {
                 enemies[i].y += enemies[i].speed;
                 ctx.fillStyle = 'green';
                 ctx.fillRect(enemies[i].x, enemies[i].y, enemies[i].width, enemies[i].height);
 
-                // Check bullet collisions
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     if (checkCollision(bullets[j], enemies[i])) {
                         bullets.splice(j, 1);
@@ -138,22 +131,19 @@
                     }
                 }
 
-                // Check player collision
                 if (enemies[i] && checkCollision(player, enemies[i])) {
                     alert(`Game Over! Score: ${score}`);
                     location.reload();
                     return;
                 }
 
-                // Remove enemies that passed the screen
                 if (enemies[i] && enemies[i].y > canvas.height) {
                     enemies.splice(i, 1);
                 }
             }
 
-            // Draw score
             ctx.fillStyle = 'white';
-            ctx.font = '20px Arial';
+            ctx.font = `${Math.floor(canvas.width * 0.05)}px Arial`;
             ctx.fillText(`Score: ${score}`, 10, 30);
 
             requestAnimationFrame(gameLoop);
